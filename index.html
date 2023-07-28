@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Narrador de texto</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Handjet:wght@700&family=Lilita+One&family=REM:wght@300&family=Righteous&family=Roboto+Condensed:wght@300&display=swap" rel="stylesheet">
+    <link rel="icon" href="/ICON (1).jpg">
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+    <div class="container">
+        <label for="voiceSelect">Selecciona una voz:</label>
+        <select id="voiceSelect"></select>
+        <textarea placeholder=" *Message*"></textarea>
+        <button class="btn" type="button">
+            <strong>Speak</strong>
+            <div id="container-stars">
+              <div id="stars"></div>
+            </div>
+          
+            <div id="glow">
+              <div class="circle"></div>
+              <div class="circle"></div>
+            </div>
+          </button>
+    </div>
+
+    <script>
+    const text = document.querySelector('textarea');
+    const button = document.querySelector('button');
+    const voiceSelect = document.getElementById('voiceSelect');
+
+    // Función para obtener la lista de voces disponibles
+    function getVoices() {
+        return new Promise(resolve => {
+            let voices = speechSynthesis.getVoices();
+            if (voices.length !== 0) {
+                resolve(voices);
+                return;
+            }
+            speechSynthesis.onvoiceschanged = () => {
+                voices = speechSynthesis.getVoices();
+                resolve(voices);
+            };
+        });
+    }
+
+    // Función para llenar el select con las voces disponibles
+    function populateVoiceList() {
+        getVoices().then(voices => {
+            voiceSelect.innerHTML = '';
+
+            voices.forEach((voice, index) => {
+                const option = document.createElement('option');
+                option.value = index;
+                option.textContent = voice.name + ' (' + voice.lang + ')';
+                voiceSelect.appendChild(option);
+            });
+
+            // Asignar evento al cambio de voz seleccionada
+            voiceSelect.addEventListener('change', () => {
+                const selectedVoiceIndex = voiceSelect.value;
+                const selectedVoice = voices[selectedVoiceIndex];
+                setVoice(selectedVoice);
+            });
+        });
+    }
+
+    // Función para establecer la voz seleccionada
+    function setVoice(voice) {
+        if (voice) {
+            speechSynthesis.cancel(); // Cancelar reproducción actual si la hay
+            speechSynthesis.onvoiceschanged = null; // Deshabilitar evento para obtener voces
+            speechSynthesis.resume(); // Reanudar síntesis de voz para cambiar la voz
+            speechSynthesis.cancel(); // Cancelar nuevamente para asegurarse de que cambie la voz
+
+            // Crear nueva síntesis de voz con la voz seleccionada
+            const utterance = new SpeechSynthesisUtterance(text.value);
+            utterance.voice = voice;
+            speechSynthesis.speak(utterance);
+
+            // Restablecer evento para obtener voces en caso de cambios futuros
+            speechSynthesis.onvoiceschanged = populateVoiceList;
+        }
+    }
+
+    // Inicializar la lista de voces al cargar la página
+    populateVoiceList();
+
+    // Evento para reproducir el texto con la voz seleccionada
+    button.addEventListener('click', () => {
+        const selectedVoiceIndex = voiceSelect.value;
+        const voices = speechSynthesis.getVoices();
+        const selectedVoice = voices[selectedVoiceIndex];
+        setVoice(selectedVoice);
+    });
+    </script>
+</body>
+</html>
